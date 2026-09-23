@@ -1,73 +1,118 @@
 import pandas as pd
 import re
 
-
-# Load dataset
 df = pd.read_csv("data/myntra_products_catalog.csv")
-
-
-# --------------------------------------------------
-# COMBINE RELEVANT TEXT
-# --------------------------------------------------
 
 df["text"] = (
     df["ProductName"].fillna("") + " " +
     df["Description"].fillna("")
 ).str.lower()
 
+# Detect target audience
+df["audience"] = df["text"].apply(
+    lambda text: (
+        "kids"
+        if re.search(
+            r"\b(boys?|girls?|kids?|children|child)\b",
+            text
+        )
+        else "adult"
+    )
+)
 
-# --------------------------------------------------
-# CATEGORY DETECTION
-# --------------------------------------------------
+def detect_category(product_name, description):
+    name = str(product_name).lower()
+    desc = str(description).lower()
 
-def detect_category(text):
     if re.search(
-        r"\b(shirt|t[- ]?shirt|top|kurta|blouse|jacket|sweater|hoodie)\b",
-        text
-    ):
-        return "top"
-
-    elif re.search(
-        r"\b(jeans|trouser|trousers|pants|shorts|skirt|leggings|joggers)\b",
-        text
+        r"\b(chinos|jeans|trouser|trousers|pants|shorts|skirt|leggings|joggers)\b",
+        name
     ):
         return "bottom"
 
-    elif re.search(
-        r"\b(shoes|heels|sneakers|sandals|boots|loafers|slip-ons)\b",
-        text
+    if re.search(
+        r"\b(shoes|heels|sneakers|sandals|boots|loafers|slip-ons|footwear)\b",
+        name
     ):
         return "footwear"
 
-    elif re.search(
+    if re.search(
         r"\b(dress|gown|saree|sari|jumpsuit|romper)\b",
-        text
+        name
     ):
         return "one_piece"
 
-    elif re.search(
+    if re.search(
         r"\b(bag|handbag|backpack|wallet|belt|watch|sunglasses)\b",
-        text
+        name
     ):
         return "accessory"
 
-    else:
-        return "other"
+    if re.search(
+        r"\b(shirt|t[- ]?shirt|top|kurta|blouse|jacket|sweater|hoodie)\b",
+        name
+    ):
+        return "top"
+
+    # Description fallback
+    if re.search(
+        r"\b(chinos|jeans|trouser|trousers|pants|shorts|skirt|leggings|joggers)\b",
+        desc
+    ):
+        return "bottom"
+
+    if re.search(
+        r"\b(shoes|heels|sneakers|sandals|boots|loafers|slip-ons|footwear)\b",
+        desc
+    ):
+        return "footwear"
+
+    if re.search(
+        r"\b(dress|gown|saree|sari|jumpsuit|romper)\b",
+        desc
+    ):
+        return "one_piece"
+
+    if re.search(
+        r"\b(bag|handbag|backpack|wallet|belt|watch|sunglasses)\b",
+        desc
+    ):
+        return "accessory"
+
+    if re.search(
+        r"\b(shirt|t[- ]?shirt|top|kurta|blouse|jacket|sweater|hoodie)\b",
+        desc
+    ):
+        return "top"
+
+    return "other"
 
 
-df["category"] = df["text"].apply(detect_category)
-
-
+df["category"] = df.apply(
+    lambda row: detect_category(
+        row["ProductName"],
+        row["Description"]
+    ),
+    axis=1
+)
 # --------------------------------------------------
 # OCCASION DETECTION
 # --------------------------------------------------
 
 def detect_occasion(text):
 
-    # Explicit sleep/nightwear should never become formal
+    # Explicit sleep/nightwear
     if re.search(
         r"\b(night suit|nightwear|sleepwear|sleep wear|pyjama|pajama|"
         r"nightdress|night dress|lounge wear|loungewear)\b",
+        text
+    ):
+        return "casual"
+
+    # Explicit casual clothing
+    if re.search(
+        r"\b(casual|casualwear|casual wear|chinos|jeans|joggers|shorts|"
+        r"t[- ]?shirt|hoodie)\b",
         text
     ):
         return "casual"
@@ -91,7 +136,6 @@ def detect_occasion(text):
 
 
 df["occasion"] = df["text"].apply(detect_occasion)
-
 
 # --------------------------------------------------
 # BODY TYPE FIT
@@ -199,10 +243,10 @@ final_df = df[
         "PrimaryColor",
         "Price (INR)",
         "trend_score",
-        "sustainability_score"
+        "sustainability_score",
+        "audience"
     ]
 ].copy()
-
 
 final_df.columns = [
     "item_id",
@@ -213,7 +257,8 @@ final_df.columns = [
     "color",
     "price",
     "trend_score",
-    "sustainability_score"
+    "sustainability_score",
+    "audience"
 ]
 
 
