@@ -1,5 +1,78 @@
 import pandas as pd
 import re
+def detect_fit(text):
+    if re.search(r"\bslim fit\b", text):
+        return "slim"
+    if re.search(r"\bskinny fit\b", text):
+        return "skinny"
+    if re.search(r"\bregular fit\b", text):
+        return "regular"
+    if re.search(r"\btailored fit\b", text):
+        return "tailored"
+    if re.search(r"\bstraight fit\b", text):
+        return "straight"
+    if re.search(r"\brelaxed fit\b", text):
+        return "relaxed"
+    if re.search(r"\boversized\b", text):
+        return "oversized"
+
+    return "unknown"
+
+
+def detect_pattern(text):
+    if re.search(r"\bsolid\b", text):
+        return "solid"
+    if re.search(r"\bchecked\b|\bcheckered\b", text):
+        return "checked"
+    if re.search(r"\bstriped\b", text):
+        return "striped"
+    if re.search(r"\bprinted\b", text):
+        return "printed"
+    if re.search(r"\bself design\b", text):
+        return "self_design"
+    if re.search(r"\bfloral\b", text):
+        return "floral"
+    if re.search(r"\btextured\b", text):
+        return "textured"
+
+    return "unknown"
+
+
+def detect_material(text):
+    materials = [
+        "cotton",
+        "linen",
+        "leather",
+        "denim",
+        "silk",
+        "wool",
+        "polyester",
+        "viscose",
+        "rayon",
+        "nylon"
+    ]
+
+    for material in materials:
+        if re.search(r"\b" + re.escape(material) + r"\b", text):
+            return material
+
+    return "unknown"
+
+
+def detect_target_market(text):
+    """
+    Detect target market from product text.
+    Boys -> men
+    Girls -> women
+    """
+
+    if re.search(r"\b(boys?|men|mens)\b", text):
+        return "men"
+
+    if re.search(r"\b(girls?|women|womens)\b", text):
+        return "women"
+
+    return "unisex"
 
 df = pd.read_csv("data/myntra_products_catalog.csv")
 
@@ -19,6 +92,11 @@ df["audience"] = df["text"].apply(
         else "adult"
     )
 )
+
+df["target_market"] = df["text"].apply(detect_target_market)
+df["fit"] = df["text"].apply(detect_fit)
+df["pattern"] = df["text"].apply(detect_pattern)
+df["material"] = df["text"].apply(detect_material)
 
 def detect_category(product_name, description):
     name = str(product_name).lower()
@@ -95,6 +173,9 @@ df["category"] = df.apply(
     ),
     axis=1
 )
+
+
+
 # --------------------------------------------------
 # OCCASION DETECTION
 # --------------------------------------------------
@@ -168,6 +249,10 @@ def detect_body_fit(text):
 
 
 df["body_type_fit"] = df["text"].apply(detect_body_fit)
+
+
+
+
 
 
 # --------------------------------------------------
@@ -244,7 +329,11 @@ final_df = df[
         "Price (INR)",
         "trend_score",
         "sustainability_score",
-        "audience"
+        "audience",
+        "target_market",
+        "fit",
+        "pattern",
+        "material"
     ]
 ].copy()
 
@@ -258,7 +347,11 @@ final_df.columns = [
     "price",
     "trend_score",
     "sustainability_score",
-    "audience"
+    "audience",
+    "target_market",
+    "fit",
+    "pattern",
+    "material"
 ]
 
 
