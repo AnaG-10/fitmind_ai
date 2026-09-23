@@ -1,18 +1,53 @@
-import pandas as pd
+from database import get_connection
 
-def filter_items(body_type, occasion, budget, min_sustainability=0):
-    df = pd.read_csv("processed_fashion_data.csv")
 
-    df = df[
-        ((df["body_type_fit"] == body_type) | (df["body_type_fit"] == "all")) &
-        (df["occasion"] == occasion) &
-        (df["price"] <= budget) &
-        (df["sustainability_score"] >= min_sustainability)
-    ]
+def filter_items(
+    body_type,
+    occasion,
+    budget,
+    min_sustainability=0
+):
+    conn = get_connection()
 
-    df = df.sort_values(
-        by=["trend_score", "sustainability_score"],
-        ascending=False
-    )
+    query = """
+        SELECT
+            item_id,
+            product_name,
+            category,
+            occasion,
+            body_type_fit,
+            color,
+            price,
+            trend_score,
+            sustainability_score
+        FROM products
+        WHERE (body_type_fit = %s OR body_type_fit = 'all')
+          AND occasion = %s
+          AND price <= %s
+          AND sustainability_score >= %s
+        ORDER BY trend_score DESC, sustainability_score DESC
+        LIMIT 10;
+    """
 
-    return df.head(10).to_dict(orient="records")
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                query,
+                (
+                    body_type,
+                    occasion,
+                    budget,
+                    min_sustainability
+                )
+            )
+
+            columns = [description[0] for description in cursor.description]
+            rows = cursor.fetchall()
+
+            return [
+                dict(zip(columns, row))
+                for row in rows
+            ]
+
+    finally:
+        conn.close()
