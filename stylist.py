@@ -1,17 +1,30 @@
 import os
-from google import genai
 from dotenv import load_dotenv
+
+from langchain_groq import ChatGroq
 
 # Load environment variables
 load_dotenv()
 
-# Initialize Gemini client
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
+# -----------------------------
+# GROQ LLM
+# -----------------------------
+
+llm = ChatGroq(
+    model="openai/gpt-oss-120b",
+    api_key=os.getenv("GROQ_API_KEY"),
+    temperature=0.7,
+)
+
+
+# -----------------------------
+# STYLIST AGENT
+# -----------------------------
 
 def stylist_agent(user_profile, filtered_items):
 
-    # Take only first 10 items from the list
+    # Take only first 5 items
     sample_items = filtered_items[:5]
 
     prompt = f"""
@@ -37,9 +50,6 @@ Task:
 Respond in a clean, structured format.
 """
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt
-    )
+    response = llm.invoke(prompt)
 
-    return response.text
+    return response.content

@@ -37,10 +37,17 @@ def run():
     print("\n🧠 FitMind AI Agent is analyzing your request...\n")
 
     try:
-        result = agent_executor.invoke({"input": query})
+        result = agent_executor.invoke({
+            "messages": [
+                {
+                    "role": "user",
+                    "content": query
+                }
+            ]
+        })
 
         print("\n✨ --- FITMIND AI RECOMMENDATION --- ✨\n")
-        print(result["output"])
+        print(result["messages"][-1].content)
 
     except Exception as e:
         print("\n⚠️ Something went wrong with the AI agent.")
