@@ -1,4 +1,4 @@
-from recommender import filter_items
+from services.hybrid_retriever import hybrid_search
 from stylist import stylist_agent
 
 
@@ -6,24 +6,42 @@ def generate_recommendation(
     body_type: str,
     occasion: str,
     budget: float,
-    sustainability: int
+    sustainability: int,
+    target_market: str = "men"
 ):
-
     user_profile = {
         "body_type": body_type,
         "occasion": occasion,
         "budget": budget,
-        "sustainability": sustainability
+        "sustainability": sustainability,
+        "target_market": target_market
     }
 
-    items = filter_items(
-        body_type,
-        occasion,
-        budget,
-        sustainability
+    query = (
+        f"{target_market} "
+        f"{occasion} "
+        f"{body_type} "
+        f"fashion outfit"
     )
 
-    if not items:
+    results = hybrid_search(
+        query=query,
+        body_type=body_type,
+        occasion=occasion,
+        budget=budget,
+        min_sustainability=sustainability,
+        target_market=target_market,
+        limit=10
+    )
+
+    products = []
+
+    for result in results:
+        product = dict(result.payload)
+        product["semantic_score"] = round(float(result.score), 4)
+        products.append(product)
+
+    if not products:
         return {
             "success": False,
             "message": "No suitable products found.",
@@ -33,12 +51,12 @@ def generate_recommendation(
 
     recommendation = stylist_agent(
         user_profile,
-        items
+        products
     )
 
     return {
         "success": True,
         "user_profile": user_profile,
-        "products": items,
+        "products": products,
         "recommendation": recommendation
     }
