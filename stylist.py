@@ -1,53 +1,72 @@
 import os
 from dotenv import load_dotenv
-
 from langchain_groq import ChatGroq
 
-# Load environment variables
 load_dotenv()
-
-
-# -----------------------------
-# GROQ LLM
-# -----------------------------
 
 llm = ChatGroq(
     model="openai/gpt-oss-120b",
     api_key=os.getenv("GROQ_API_KEY"),
-    temperature=0.7,
+    temperature=0.7
 )
 
 
-# -----------------------------
-# STYLIST AGENT
-# -----------------------------
-
-def stylist_agent(user_profile, filtered_items):
-
-    # Take only first 5 items
-    sample_items = filtered_items[:5]
+def stylist_agent(user_profile, products):
 
     prompt = f"""
-You are an expert fashion stylist AI.
+You are FitMind AI, an AI fashion stylist.
 
-User Profile:
-Body Type: {user_profile['body_type']}
-Occasion: {user_profile['occasion']}
-Budget: ₹{user_profile['budget']}
-Sustainability Preference: {user_profile['sustainability']}
+USER PROFILE:
+{user_profile}
 
-Available Clothing Options:
-{sample_items}
+PRODUCTS RETRIEVED FROM DATABASE:
+{products}
 
-Task:
-1. Select the best 1–3 items that create a cohesive outfit.
-2. Explain why they suit the body type.
-3. Explain why they suit the occasion.
-4. Mention color harmony.
-5. Provide a confidence score out of 100.
-6. Suggest one styling tip.
+IMPORTANT RULES:
 
-Respond in a clean, structured format.
+1. Use ONLY factual product information explicitly present in the database data above.
+2. Do NOT invent fabric, material, fit, pattern, occasion, color, brand attributes,
+   sustainability properties, or other product characteristics.
+3. If body_type_fit is "all", describe the product as generally compatible,
+   NOT specifically designed for the user's body type.
+4. The database match_score is a ranking score, not an AI confidence score.
+5. Never create or report a "confidence score".
+6. You may give styling suggestions such as trousers, shoes, accessories,
+   colors, or layering ideas, but clearly present them as suggestions.
+7. Do not claim that a styling suggestion is part of the retrieved product.
+8. Do not call a product "optimal", "best", or "perfect".
+9. Do not make unsupported claims about professional dress codes.
+10. Keep factual product information separate from styling advice.
+
+Return the answer in exactly this structure:
+
+### 1. Recommended Product
+Product name, price, color, category, and occasion.
+
+### 2. Why It Matches
+Explain the match using the actual database fields:
+- occasion
+- budget
+- body type compatibility
+- sustainability score
+- trend score
+- database match score
+
+### 3. Styling Suggestions
+Give practical suggestions for completing the outfit.
+Clearly label these as styling suggestions rather than product facts.
+
+### 4. Match Details
+State:
+- Database match score
+- Sustainability score
+- Trend score
+
+Do NOT convert the match score into a percentage or confidence score.
+
+### 5. Important Note
+If the product has body_type_fit = "all", explicitly mention that
+the database does not specify a body-type-specific fit.
 """
 
     response = llm.invoke(prompt)
