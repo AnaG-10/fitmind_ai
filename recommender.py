@@ -19,13 +19,41 @@ def filter_items(
             color,
             price,
             trend_score,
-            sustainability_score
+            sustainability_score,
+
+            (
+                CASE
+                    WHEN body_type_fit = %s THEN 40
+                    WHEN body_type_fit = 'all' THEN 25
+                    ELSE 0
+                END
+                +
+                CASE
+                    WHEN occasion = %s THEN 25
+                    ELSE 0
+                END
+                +
+                CASE
+                    WHEN price <= %s * 0.5 THEN 15
+                    WHEN price <= %s * 0.75 THEN 12
+                    WHEN price <= %s THEN 10
+                    ELSE 0
+                END
+                +
+                (sustainability_score * 1.0)
+                +
+                (trend_score * 0.5)
+            ) AS match_score
+
         FROM products
+
         WHERE (body_type_fit = %s OR body_type_fit = 'all')
           AND occasion = %s
           AND price <= %s
           AND sustainability_score >= %s
-        ORDER BY trend_score DESC, sustainability_score DESC
+
+        ORDER BY match_score DESC, price ASC
+
         LIMIT 10;
     """
 
@@ -34,6 +62,11 @@ def filter_items(
             cursor.execute(
                 query,
                 (
+                    body_type,
+                    occasion,
+                    budget,
+                    budget,
+                    budget,
                     body_type,
                     occasion,
                     budget,
