@@ -3,12 +3,16 @@ from services.qdrant_search import qdrant, COLLECTION_NAME
 from services.semantic_retriever import embed_query
 
 
+
 def get_filtered_product_ids(
     body_type,
     occasion,
     budget,
     min_sustainability=0,
-    target_market="men"
+    target_market="men",
+    category=None,
+    color=None,
+    fit=None
 ):
     conn = get_connection()
 
@@ -21,6 +25,9 @@ def get_filtered_product_ids(
           AND sustainability_score >= %s
           AND (body_type_fit = %s OR body_type_fit = 'all')
           AND (target_market = %s OR target_market = 'unisex')
+          AND (%s IS NULL OR category = %s)
+          AND (%s IS NULL OR LOWER(color) = LOWER(%s))
+          AND (%s IS NULL OR fit = %s)
     """
 
     try:
@@ -32,7 +39,13 @@ def get_filtered_product_ids(
                     budget,
                     min_sustainability,
                     body_type,
-                    target_market
+                    target_market,
+                    category,
+                    category,
+                    color,
+                    color,
+                    fit,
+                    fit
                 )
             )
 
@@ -40,6 +53,33 @@ def get_filtered_product_ids(
 
     finally:
         conn.close()
+
+def deduplicate_results(results):
+    unique_products = {}
+
+    for result in results:
+        product = result.payload
+        product_name = product["product_name"]
+
+        if product_name not in unique_products:
+            unique_products[product_name] = result
+            continue
+
+        existing = unique_products[product_name]
+
+        existing_price = existing.payload.get("price")
+        current_price = product.get("price")
+
+        if (
+            current_price is not None
+            and (
+                existing_price is None
+                or current_price < existing_price
+            )
+        ):
+            unique_products[product_name] = result
+
+    return list(unique_products.values())
 
 
 def hybrid_search(
@@ -49,6 +89,9 @@ def hybrid_search(
     budget,
     min_sustainability=0,
     target_market="men",
+    category=None,
+    color=None,
+    fit=None,
     limit=10
 ):
     filtered_ids = get_filtered_product_ids(
@@ -56,7 +99,10 @@ def hybrid_search(
         occasion=occasion,
         budget=budget,
         min_sustainability=min_sustainability,
-        target_market=target_market
+        target_market=target_market,
+        category=category,
+        color=color,
+        fit=fit
     )
 
     if not filtered_ids:
@@ -74,11 +120,12 @@ def hybrid_search(
                 }
             ]
         },
-        limit=limit,
+        limit=limit * 3,
+
         with_payload=True
     )
 
-    return results.points
+    return deduplicate_results(results.points)[:limit]
 
 
 if __name__ == "__main__":

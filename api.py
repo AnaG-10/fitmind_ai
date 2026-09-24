@@ -17,6 +17,13 @@ class RecommendationRequest(BaseModel):
     budget: float
     sustainability: int
 
+    target_market: str = "men"
+    category: str | None = None
+    color: str | None = None
+    fit: str | None = None
+    material: str | None = None
+    style: str | None = None
+
 
 @app.get("/")
 def home():
@@ -40,5 +47,11 @@ def recommend(request: RecommendationRequest):
         body_type=request.body_type,
         occasion=request.occasion,
         budget=request.budget,
-        sustainability=request.sustainability
+        sustainability=request.sustainability,
+        target_market=request.target_market,
+        category=request.category,
+        color=request.color,
+        fit=request.fit,
+        material=request.material,
+        style=request.style
     )
