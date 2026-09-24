@@ -1,5 +1,8 @@
+
+from typing import Literal
+
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict
 
 from services.recommendation_service import generate_recommendation
 
@@ -11,18 +14,84 @@ app = FastAPI(
 )
 
 
-class RecommendationRequest(BaseModel):
-    body_type: str
-    occasion: str
-    budget: float
-    sustainability: int
+BodyType = Literal[
+    "inverted_triangle",
+    "pear",
+    "rectangle"
+]
 
-    target_market: str = "men"
-    category: str | None = None
-    color: str | None = None
-    fit: str | None = None
-    material: str | None = None
-    style: str | None = None
+Occasion = Literal[
+    "casual",
+    "formal",
+    "party"
+]
+
+TargetMarket = Literal[
+    "men",
+    "women",
+    "unisex"
+]
+
+Category = Literal[
+    "accessory",
+    "bottom",
+    "footwear",
+    "one_piece",
+    "top"
+]
+
+FitType = Literal[
+    "oversized",
+    "regular",
+    "relaxed",
+    "skinny",
+    "slim",
+    "straight",
+    "tailored",
+    "unknown"
+]
+
+
+class RecommendationRequest(BaseModel):
+    model_config = ConfigDict(
+        str_strip_whitespace=True
+    )
+
+    body_type: BodyType
+    occasion: Occasion
+
+    budget: float = Field(
+        gt=0,
+        allow_inf_nan=False
+    )
+
+    sustainability: int = Field(
+        ge=0,
+        le=10
+    )
+
+    target_market: TargetMarket = "men"
+
+    category: Category | None = None
+    color: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=50
+    )
+
+    fit: FitType | None = None
+
+    material: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=50
+    )
+
+    style: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=50
+    )
 
 
 @app.get("/")
@@ -42,7 +111,6 @@ def health():
 
 @app.post("/recommend")
 def recommend(request: RecommendationRequest):
-
     return generate_recommendation(
         body_type=request.body_type,
         occasion=request.occasion,
