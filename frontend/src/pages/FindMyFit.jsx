@@ -1,3 +1,4 @@
+import ProductCard from "../components/ProductCard";
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -454,6 +455,37 @@ export default function FindMyFit() {
                     </ReactMarkdown>
                   </div>
                 </div>
+
+
+                {/* Product recommendations */}
+                {results.products?.length > 0 && (
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#777b58]">
+                        Your personalized edit
+                      </p>
+
+                      <h3 className="text-2xl font-light tracking-tight text-[#25251f]">
+                        Pieces picked for you.
+                      </h3>
+
+                      <p className="text-sm leading-6 text-[#88887e]">
+                        Explore real products from the FitMind catalog,
+                        matched to your preferences.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                      {results.products.map((product, index) => (
+                        <ProductCard
+                          key={product.item_id}
+                          product={product}
+                          index={index}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <button
                   type="button"
